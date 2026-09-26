@@ -864,7 +864,9 @@ function Write-AmigaFilestoInterimDrive {
     $Script:Settings.CurrentSubTaskName = "Creating new folders and/or adding .info files where needed"
     Write-StartSubTaskMessage
     
-    $FolderstoAdd = ((Get-InputFileCSV "FolderstoAdd").where({$_.PackageName.Trim() -in ($ValidPackages + $ValidOSPackages) }) | Select-Object DrivetoInstall,LocationtoInstall,CreateInfoFile)
+    $AdditionalPackagesforFolders = ((Get-InputFileCSV -CSV "Packages").where({ $_.PackageType -eq "Mandatory Package" })).PackageName 
+
+    $FolderstoAdd = ((Get-InputFileCSV "FolderstoAdd").where({$_.PackageName.Trim() -in ($ValidPackages + $ValidOSPackages + $AdditionalPackagesforFolders) }) | Select-Object DrivetoInstall,LocationtoInstall,CreateInfoFile)
     $FolderstoAdd += (Get-NewInstallPathFolders | Select-Object DrivetoInstall,LocationtoInstall,CreateInfoFile)
     $FolderstoAdd = $FolderstoAdd | Select-object DrivetoInstall, LocationtoInstall, CreateInfoFile -unique 
 
