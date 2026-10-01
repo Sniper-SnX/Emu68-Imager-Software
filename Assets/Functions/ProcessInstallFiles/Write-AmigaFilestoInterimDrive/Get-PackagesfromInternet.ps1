@@ -113,13 +113,11 @@ function Get-PackagesfromInternet {
                  Write-InformationMessage -Message "Extracting files from: $($DownloadtoProcess.ArchiveFileName)"
                 if ($DownloadtoProcess.ArchiveFileExtension -eq '.adf'){
                     $LogPathStandardOutput = Join-Path  $LogTempFolder "$($DownloadtoProcess.ArchiveFileNameNoExtension)LogStd.txt"
-                    Write-informationMessage -Message "Extracting ADF $ArchiveFileName"
-                    $OutputMessage = & $UnADFFilePath -d $ExtractionFolder $($DownloadtoProcess.ArchiveFileName) 2>&1 
-                    If ($LASTEXITCODE -ne 0) {
-                        Write-ErrorMessage -Message "Unable to extract ADF for $($DownloadtoProcess.ArchiveFileName)!"
-                        $OutputMessage | Out-File -FilePath $LogPathStandardOutput -Encoding UTF8
-                        exit
-                    }
+                    Write-informationMessage -Message "Extracting ADF $($DownloadtoProcess.ArchiveFileName)"
+                    $oldPreference = $ErrorActionPreference
+                    $ErrorActionPreference = 'SilentlyContinue'
+                    $OutputMessage = & $UnADFFilePath -d $($DownloadtoProcess.ExtractionFolder) $($DownloadtoProcess.ArchiveFileName) 2>&1
+                    $ErrorActionPreference = $oldPreference
                 }                   
                 elseif ($DownloadtoProcess.ArchiveFileExtension -eq '.lzx'){
                     $LogPathStandardOutput = Join-Path  $LogTempFolder "$($DownloadtoProcess.ArchiveFileNameNoExtension)LogStd.txt"
