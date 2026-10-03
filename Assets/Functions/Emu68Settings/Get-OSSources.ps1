@@ -5,6 +5,10 @@ function Get-OSSources {
     $InstallMediaDescriptions = @{}
     $PackageStatus = @{}
 
+    $MangledADFLookup = @(
+        (Get-InputFileCSV -CSV 'OSSources').Where({ $_.ADFUseMangledNames -eq $true }).SourceLocation | Select-Object -Unique
+    )
+
     if ($Script:GUICurrentStatus.AvailablePackagesNeedingGeneration -eq "TRUE"){
         Get-SelectablePackages
         $Script:GUICurrentStatus.AvailablePackagesNeedingGeneration = "FALSE"
@@ -62,6 +66,7 @@ function Get-OSSources {
     
     Foreach ($Source in ($IconSources + $OSSources)) {
         $InstallMediaFriendlyName = $InstallMediaDescriptions[$Source.SourceLocation]
+        $ADFUseMangledNames = if ($Source.SourceLocation -in $MangledADFLookup) { $true } else { $false }
         $PackageSelected = $PackageStatus[$Source.PackageName].PackageSelected   
         If (-not $PackageSelected -eq $true) {continue}
         $TotalSources.Add([PSCustomObject]@{
@@ -69,6 +74,7 @@ function Get-OSSources {
             SourceType     = $Source.SourceType
             CDParent = $(If ($Source.CDParent) {($Source.CDParent.toupper())} else {""})
             SourceLocation = $Source.SourceLocation
+            ADFUseMangledNames = $ADFUseMangledNames
             ArchiveinArchiveName = $Source.ArchiveinArchiveName
             ArchiveinArchivePassword = $Source.ArchiveinArchivePassword
             InstallMediaFriendlyName  = $InstallMediaFriendlyName

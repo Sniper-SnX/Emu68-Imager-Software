@@ -34,7 +34,7 @@ function Write-AmigaFilestoInterimDrive {
     $OSSources = Get-OSSources
     $OSSources_AIA = $OSSources.where({$_.SourceType -eq "ArchiveinArchive"})
     
-    $ListofOSPackagestoInstall = $(if ($Script:GUIActions.InstallOSFiles -eq $true) {$OSSources}) | Select-Object SourceLocation, SourceType, ArchiveinArchiveName, ArchiveinArchivePassword, OutputLocation, CDParent -Unique
+    $ListofOSPackagestoInstall = $(if ($Script:GUIActions.InstallOSFiles -eq $true) {$OSSources}) | Select-Object SourceLocation, SourceType, ArchiveinArchiveName, ArchiveinArchivePassword, OutputLocation, ADFUseMangledNames, CDParent -Unique
    
     $ListofOSPackagestoInstall.ForEach({
         $Line = $_
@@ -51,7 +51,7 @@ function Write-AmigaFilestoInterimDrive {
     @{
         Name = 'UseLhasa'
         Expression = { if ($_.SourceType -in @('ArchiveInArchive', 'Archive'))  { 'TRUE - NOCHECK' } else {$null } }
-    }, CDParent, ArchiveinArchiveName, ArchiveinArchivePassword, OutputLocation -Unique
+    }, CDParent, ArchiveinArchiveName, ArchiveinArchivePassword, OutputLocation, ADFUseMangledNames -Unique
     
         
     $Script:Settings.CurrentSubTaskNumber ++

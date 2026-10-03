@@ -32,6 +32,7 @@ function Get-PackagesfromInternet {
 
     foreach ( $Line in $ListofPackagestoDownload ){
         $DownloadNumber ++
+        $ADFUseMangledNames = if ($line.ADFUseMangledNames -eq $true) { $true } else { $false }
         $DownloadFileExtension = [System.IO.Path]::GetExtension($line.OutputLocation)
         $NameofDLNoExtension  = [System.IO.Path]::GetFileNameWithoutExtension($line.OutputLocation)      
         Write-InformationMessage -Message  "Processing $($line.OutputLocation) `($DownloadNumber/$TotalDownloads`)" -NewLineBefore
@@ -80,6 +81,7 @@ function Get-PackagesfromInternet {
             $DownloadstoProcess = @(
                 [PSCustomObject]@{
                     ArchiveFileName = $FileNametoUse
+                    ADFUseMangledNames = $ADFUseMangledNames
                     ArchiveFileNameNoExtension = [System.IO.Path]::GetFileNameWithoutExtension($FileNametoUse)
                     ArchiveFileExtension = [System.IO.Path]::GetExtension($FileNametoUse)
                     ExtractionFolder = $ExtractionFolder
@@ -99,6 +101,7 @@ function Get-PackagesfromInternet {
                 $DownloadstoProcess += @(
                     [PSCustomObject]@{
                         ArchiveFileName = $ArchiveFileName
+                        ADFUseMangledNames = $false
                         ArchiveFileNameNoExtension = [System.IO.Path]::GetFileNameWithoutExtension($ArchiveFileName)
                         ArchiveFileExtension = [System.IO.Path]::GetExtension($ArchiveFileName)
                         ExtractionFolder = $ExtractionFolderAiA
@@ -116,7 +119,12 @@ function Get-PackagesfromInternet {
                     Write-informationMessage -Message "Extracting ADF $($DownloadtoProcess.ArchiveFileName)"
                     $oldPreference = $ErrorActionPreference
                     $ErrorActionPreference = 'SilentlyContinue'
-                    $OutputMessage = & $UnADFFilePath -d $($DownloadtoProcess.ExtractionFolder) $($DownloadtoProcess.ArchiveFileName) 2>&1
+                    If ($DownloadtoProcess.ADFUseMangledNames -eq $true) {
+                        $OutputMessage = & $UnADFFilePath -w -d $($DownloadtoProcess.ExtractionFolder) $($DownloadtoProcess.ArchiveFileName) 2>&1  
+                    }
+                    else {
+                        $OutputMessage = & $UnADFFilePath -d $($DownloadtoProcess.ExtractionFolder) $($DownloadtoProcess.ArchiveFileName) 2>&1                        
+                    }
                     $ErrorActionPreference = $oldPreference
                 }                   
                 elseif ($DownloadtoProcess.ArchiveFileExtension -eq '.lzx'){

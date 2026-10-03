@@ -98,9 +98,11 @@
                 $Time = (Get-Date -Format "HH:mm:ss")
                 $ThreadDetails = "[Thread-$([System.Threading.Thread]::CurrentThread.ManagedThreadId)][$Time] Dedicated OS"
                 $FileNametoUse = if ($Line.SourceType -eq "UserFiles - Local - Archive" -or $Line.SourceType -eq "Local - Archive") { $Line.SourceLocation } else { $Line.OutputLocation }
+                $ADFUseMangledNames = if ($line.ADFUseMangledNames -eq $true) { $true } else { $false }
                 $Result = [PSCustomObject]@{
                     Thread                             = $ThreadDetails
                     FileName                           = $FileNametoUse
+                    ADFUseMangledNames                 = $ADFUseMangledNames
                     CDParent                           = $Line.CDParent
                     ArchivePassword                    = $null
                     DownloadStatus                     = $null
@@ -170,6 +172,7 @@
                     $Result_AIA = [PSCustomObject]@{
                         Thread                             = $ThreadDetails
                         FileName                           = $FileName_AIA
+                        ADFUseMangledNames                 = $false
                         CDParent                           = $null
                         ArchivePassword                    = $Line.ArchiveinArchivePassword
                         DownloadStatus                     = "Not Needed" 
@@ -204,7 +207,12 @@
                 if ($DownloadstoProcess){
                     foreach ($DownloadtoProcess in $DownloadstoProcess) {
                         if ($DownloadtoProcess.FileNameExtension -eq '.adf'){
-                            $OutputMessage = & $UnADFFilePath -d $DownloadtoProcess.ExtractionFolder $($DownloadtoProcess.FileName) 2>&1 
+                            If ($DownloadtoProcess.ADFUseMangledNames -eq $true) {
+                                $OutputMessage = & $UnADFFilePath -w -d $DownloadtoProcess.ExtractionFolder $($DownloadtoProcess.FileName) 2>&1 
+                            }
+                            else {
+                                $OutputMessage = & $UnADFFilePath -d $DownloadtoProcess.ExtractionFolder $($DownloadtoProcess.FileName) 2>&1 
+                            }
                             If ($LASTEXITCODE -ne 0) {
                                 If ($DownloadtoProcess.AiA){
                                     $Result_AIA.ExtractionSuccess = $false
