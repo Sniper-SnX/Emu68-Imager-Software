@@ -40,7 +40,7 @@ $DefaultConfigFile=@"
         # Matches RunParallel=<value>
         '^RunParallel\s*=\s*(?<value>.*)$' {
             if ($Matches.value.Trim() -eq "Never") {
-                $Script:GUIActionsCurrentStatus.RunParallelInstalled = "Never"
+                $Script:GUICurrentStatus.RunParallelInstalled = "Never"
                 Write-InformationMessage -Message "Run in Parallel Disabled"                
             }
         }
@@ -58,4 +58,3 @@ $DefaultConfigFile=@"
     }           
     return
 }
-
