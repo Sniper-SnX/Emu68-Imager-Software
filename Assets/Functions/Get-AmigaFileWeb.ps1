@@ -4,7 +4,7 @@ function Get-AmigaFileWeb {
         [string]$BackupURL = $null,
         [string]$LocationforDL,
         [array]$AminetMirrors,
-        [int]$NumberofAttempts = 1,
+        [int]$NumberofAttempts = 3,
         [bool]$RunParallel = $false,
         $ParallelRunLogFolder
     )  
@@ -46,10 +46,20 @@ function Get-AmigaFileWeb {
         }
     }
     
-    $clientTurran = [System.Net.Http.HttpClient]::new()
-    $clientTurran.DefaultRequestHeaders.UserAgent.ParseAdd("AmigaHttpClient")    
-    $client = [System.Net.Http.HttpClient]::new()
-    $client.DefaultRequestHeaders.UserAgent.ParseAdd("PowerShellHttpClient")
+    if ($null -eq $Script:AmigaFileWebHttpClients) {
+        $clientTurran = [System.Net.Http.HttpClient]::new()
+        $clientTurran.DefaultRequestHeaders.UserAgent.ParseAdd("AmigaHttpClient")
+        $client = [System.Net.Http.HttpClient]::new()
+        $client.DefaultRequestHeaders.UserAgent.ParseAdd("PowerShellHttpClient")
+        $Script:AmigaFileWebHttpClients = [PSCustomObject]@{
+            Amiga      = $clientTurran
+            PowerShell = $client
+        }
+    }
+    else {
+        $clientTurran = $Script:AmigaFileWebHttpClients.Amiga
+        $client = $Script:AmigaFileWebHttpClients.PowerShell
+    }
     $success = $false
       
     if ($RunParallel) {
@@ -88,7 +98,7 @@ function Get-AmigaFileWeb {
                         Write-InformationMessage -Message "Trying Download again. Retry Attempt # $RetryAttempt" 
                     }                    
                 }
-                $TimeoutSeconds = 5
+                $TimeoutSeconds = 30
                 $TimeSpan = [System.TimeSpan]::FromSeconds($TimeoutSeconds)                
                 $CancellationTokenSource = [System.Threading.CancellationTokenSource]::new($TimeSpan)
 
@@ -116,7 +126,7 @@ function Get-AmigaFileWeb {
                 if ($response.IsSuccessStatusCode) {
                     $FileLength = $response.Content.Headers.ContentLength
                     $stream = $response.Content.ReadAsStreamAsync().Result
-                    $fileStream = [System.IO.File]::OpenWrite($LocationforDL)
+                    $fileStream = [System.IO.File]::Open($LocationforDL, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
                     $buffer = New-Object byte[] 65536  # 64 KB
                     $read = 0
                     $totalRead = 0
@@ -181,7 +191,18 @@ function Get-AmigaFileWeb {
                                 Write-InformationMessage -Message "File size mismatch. Expected $FileLength bytes, got $downloadedSize bytes."
                             }                            
                             Remove-Item -Path $LocationforDL -Force -ErrorAction SilentlyContinue
-                        } else {
+                        }
+                        elseif (-not (Test-ArchiveFileType -Path $LocationforDL)) {
+                            $Extension = [System.IO.Path]::GetExtension($LocationforDL)
+                            if ($RunParallel) {
+                                "$([datetime]::Now.ToString('HH:mm:ss:ms'));Thread-$([System.Threading.Thread]::CurrentThread.ManagedThreadId);Downloaded content does not match the $Extension file extension." | Out-File $DebugLog -Append
+                            }
+                            else {
+                                Write-InformationMessage -Message "Downloaded content does not match the $Extension file extension."
+                            }
+                            Remove-Item -Path $LocationforDL -Force -ErrorAction SilentlyContinue
+                        }
+                        else {
                             $success = $true
                             break MirrorLoop
                         }
@@ -207,9 +228,13 @@ function Get-AmigaFileWeb {
                 }
             }
             catch {
+                $ErrorMessage = $_.Exception.GetBaseException().Message
                 if (-not ($RunParallel)) {
-                    Write-InformationMessage -Message "Error in attempt $attempt"
-                }                
+                    Write-InformationMessage -Message "Error in attempt $attempt`: $ErrorMessage"
+                }
+                else {
+                    "$([datetime]::Now.ToString('HH:mm:ss:ms'));Thread-$([System.Threading.Thread]::CurrentThread.ManagedThreadId);Error in attempt $attempt`: $ErrorMessage" | Out-File $DebugLog -Append
+                }
             }
             finally {                                
                 if ($null -ne $response) { $response.Dispose() }
