@@ -4,9 +4,11 @@ function Get-AmigaFileWeb {
         [string]$BackupURL = $null,
         [string]$LocationforDL,
         [array]$AminetMirrors,
-        [int]$NumberofAttempts = 3,
+        [int]$NumberofAttempts = 1,
         [bool]$RunParallel = $false,
-        $ParallelRunLogFolder
+        $ParallelRunLogFolder,
+        $TurranClient,
+        $HttpClient
     )  
 
     # $URL = "http://aminet.net/util/shell/LList.lha"
@@ -46,20 +48,6 @@ function Get-AmigaFileWeb {
         }
     }
     
-    if ($null -eq $Script:AmigaFileWebHttpClients) {
-        $clientTurran = [System.Net.Http.HttpClient]::new()
-        $clientTurran.DefaultRequestHeaders.UserAgent.ParseAdd("AmigaHttpClient")
-        $client = [System.Net.Http.HttpClient]::new()
-        $client.DefaultRequestHeaders.UserAgent.ParseAdd("PowerShellHttpClient")
-        $Script:AmigaFileWebHttpClients = [PSCustomObject]@{
-            Amiga      = $clientTurran
-            PowerShell = $client
-        }
-    }
-    else {
-        $clientTurran = $Script:AmigaFileWebHttpClients.Amiga
-        $client = $Script:AmigaFileWebHttpClients.PowerShell
-    }
     $success = $false
       
     if ($RunParallel) {
@@ -107,10 +95,10 @@ function Get-AmigaFileWeb {
                 }
 
                 if ($UserAgenttoUse -eq "PowerShell") {
-                    $response = $client.GetAsync($item.URL, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead,$CancellationTokenSource.token).Result
+                    $response = $HttpClient.GetAsync($item.URL, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead,$CancellationTokenSource.token).Result
                 }
                 elseif ($UserAgenttoUse -eq "Amiga") {
-                    $response = $clientTurran.GetAsync($item.URL, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead,$CancellationTokenSource.token).Result
+                    $response = $TurranClient.GetAsync($item.URL, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead,$CancellationTokenSource.token).Result
                 }
                 else {
                     if (-not ($RunParallel)) {
